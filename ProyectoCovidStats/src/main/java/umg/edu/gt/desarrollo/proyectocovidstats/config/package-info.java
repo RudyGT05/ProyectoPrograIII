@@ -1,0 +1,1 @@
+package umg.edu.gt.desarrollo.proyectocovidstats.config;
