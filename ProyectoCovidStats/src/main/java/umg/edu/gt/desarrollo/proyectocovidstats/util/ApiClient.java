@@ -1,11 +1,15 @@
 package umg.edu.gt.desarrollo.proyectocovidstats.util;
 
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+import umg.edu.gt.desarrollo.proyectocovidstats.config.AppConfig;
+
 @Component
+@EnableConfigurationProperties(AppConfig.class)
 public class ApiClient {
 
     private static final String API_URL = "https://covid-19-statistics.p.rapidapi.com/regions";

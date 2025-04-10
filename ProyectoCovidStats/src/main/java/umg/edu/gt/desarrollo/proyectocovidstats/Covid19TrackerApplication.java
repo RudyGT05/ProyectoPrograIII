@@ -6,9 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import umg.edu.gt.desarrollo.proyectocovidstats.config.AppConfig;
 import umg.edu.gt.desarrollo.proyectocovidstats.service.ApiService;
 
 @SpringBootApplication
+@EnableConfigurationProperties(AppConfig.class)
 public class Covid19TrackerApplication {
 
     private final ApiService apiService;
