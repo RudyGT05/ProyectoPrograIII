@@ -34,5 +34,14 @@ public class Province {
         this.name = name;
     }
 
+    public Region getRegion() {
+        return region;
+    }
+
+    public void setRegion(Region region) {
+        this.region = region;
+    }
+
 
 }
+
