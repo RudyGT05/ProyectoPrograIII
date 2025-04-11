@@ -9,6 +9,9 @@ public class AppConfig {
     private String countryIso;
     private String reportDate;
 
+    // Agregar la propiedad para la demora en la ejecución
+    private long initialDelay;
+
     // Getters y Setters (deben coincidir exactamente con los nombres en el properties)
     public String getCountryIso() {
         return countryIso;
@@ -24,5 +27,13 @@ public class AppConfig {
 
     public void setReportDate(String reportDate) {
         this.reportDate = reportDate;
+    }
+
+    public long getInitialDelay() {
+        return initialDelay;
+    }
+
+    public void setInitialDelay(long initialDelay) {
+        this.initialDelay = initialDelay;
     }
 }

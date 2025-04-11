@@ -2,6 +2,8 @@ package umg.edu.gt.desarrollo.proyectocovidstats.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
 import umg.edu.gt.desarrollo.proyectocovidstats.model.Province;
 import umg.edu.gt.desarrollo.proyectocovidstats.model.Region;
@@ -15,12 +17,13 @@ import java.util.*;
 
 @Service
 public class CovidDataService {
+    private static final Logger logger = LogManager.getLogger(CovidDataService.class);
+
     private final RegionRepository regionRepository;
     private final ProvinceRepository provinceRepository;
     private final ReportRepository reportRepository;
     private final ObjectMapper objectMapper;
 
-    // Internal HashMaps for temporary work
     private final Map<String, Region> isoRegionMap = new HashMap<>();
     private final Map<String, Province> nameProvinceMap = new HashMap<>();
 
@@ -36,29 +39,33 @@ public class CovidDataService {
     public void saveRegions(String json) throws Exception {
         JsonNode root = objectMapper.readTree(json).get("data");
         List<Region> regionsToSave = new ArrayList<>();
+        Set<String> newIsos = new HashSet<>();
 
         for (JsonNode node : root) {
             String iso = node.get("iso").asText();
+
+            if (newIsos.contains(iso)) {
+                continue;
+            }
 
             List<Region> existingList = regionRepository.findByIso(iso);
             Region region;
 
             if (!existingList.isEmpty()) {
-                // If it exists, we update the data
                 region = existingList.get(0);
                 region.setName(node.get("name").asText());
+                regionRepository.save(region);
             } else {
-                //If it doesn't exist, we create a new one
                 region = new Region();
                 region.setIso(iso);
                 region.setName(node.get("name").asText());
                 regionsToSave.add(region);
+                newIsos.add(iso);
             }
 
             isoRegionMap.put(region.getIso(), region);
         }
 
-        // We only save the new regions
         if (!regionsToSave.isEmpty()) {
             regionRepository.saveAll(regionsToSave);
         }
@@ -67,7 +74,6 @@ public class CovidDataService {
     public void saveProvinces(String json, String isoCode) throws Exception {
         Region region = isoRegionMap.get(isoCode);
         if (region == null) {
-            // We try to search for it in the DB if it is not on the map
             List<Region> existingList = regionRepository.findByIso(isoCode);
             if (existingList.isEmpty()) {
                 throw new Exception("Region not found for ISO code: " + isoCode);
@@ -79,8 +85,6 @@ public class CovidDataService {
         JsonNode root = objectMapper.readTree(json).get("data");
         List<Province> provincesToSave = new ArrayList<>();
 
-        // Clear the province map for this region before adding new ones
-        // This avoids problems if saveProvinces is run multiple times
         for (Iterator<Map.Entry<String, Province>> it = nameProvinceMap.entrySet().iterator(); it.hasNext();) {
             Map.Entry<String, Province> entry = it.next();
             if (entry.getValue().getRegion().getId().equals(region.getId())) {
@@ -100,11 +104,9 @@ public class CovidDataService {
                 provincesToSave.add(province);
             }
 
-            // Save both with the exact name and with the name in lowercase for better matching
             nameProvinceMap.put(provinceName, province);
             nameProvinceMap.put(provinceName.toLowerCase(), province);
 
-            // Si hay un nombre alternativo, también lo guardamos
             if (node.has("name")) {
                 String altName = node.get("name").asText();
                 if (!altName.isEmpty() && !altName.equals(provinceName)) {
@@ -116,10 +118,10 @@ public class CovidDataService {
 
         if (!provincesToSave.isEmpty()) {
             provinceRepository.saveAll(provincesToSave);
-            System.out.println("They were saved " + provincesToSave.size() + " new provinces");
+            logger.info("They were saved {} new provinces", provincesToSave.size());
         }
 
-        System.out.println("Total number of provinces on the temporary map: " + nameProvinceMap.size());
+        logger.info("Total number of provinces on the temporary map: {}", nameProvinceMap.size());
     }
 
     public void saveReports(String json) throws Exception {
@@ -127,14 +129,12 @@ public class CovidDataService {
         List<Report> reportsToSave = new ArrayList<>();
 
         for (JsonNode node : root) {
-            // First we check if the JSON structure has the province correctly
             if (!node.has("region") || !node.get("region").has("province")) {
-                System.out.println("Node without province information: " + node.toString());
+                logger.warn("Node without province information: {}", node.toString());
                 continue;
             }
 
             String provinceName = node.get("region").get("province").asText();
-            // If provinceName is empty, we try to use region.name as a fallback
             if (provinceName.isEmpty() || provinceName.equals("N/A")) {
                 if (node.get("region").has("name")) {
                     provinceName = node.get("region").get("name").asText();
@@ -146,16 +146,14 @@ public class CovidDataService {
             Province province = nameProvinceMap.get(provinceName);
 
             if (province == null) {
-                // If it's not on the map, we try to search the DB for a similar name
-                System.out.println("Province not found on the temporary map: " + provinceName);
+                logger.warn("Province not found on the temporary map: {}", provinceName);
                 List<Province> similarProvinces = provinceRepository.findByNameContainingIgnoreCase(provinceName);
                 if (!similarProvinces.isEmpty()) {
                     province = similarProvinces.get(0);
-                    // Added to the map for future reference
                     nameProvinceMap.put(provinceName, province);
-                    System.out.println("Similar province found: " + province.getName());
+                    logger.info("Similar province found: {}", province.getName());
                 } else {
-                    System.out.println("No province similar to: " + provinceName);
+                    logger.warn("No province similar to: {}", provinceName);
                     continue;
                 }
             }
@@ -165,13 +163,11 @@ public class CovidDataService {
                 Report existingReport = reportRepository.findByProvinceAndDate(province, reportDate);
 
                 if (existingReport != null) {
-                    // We update the existing report
                     existingReport.setConfirmed(node.get("confirmed").asInt());
                     existingReport.setDeaths(node.get("deaths").asInt());
                     existingReport.setRecovered(node.get("recovered").asInt());
                     reportsToSave.add(existingReport);
                 } else {
-                    // We create a new report
                     Report report = new Report();
                     report.setDate(reportDate);
                     report.setConfirmed(node.get("confirmed").asInt());
@@ -181,15 +177,15 @@ public class CovidDataService {
                     reportsToSave.add(report);
                 }
             } catch (Exception e) {
-                System.out.println("Error processing report: " + e.getMessage() + " - For province: " + provinceName);
+                logger.error("Error processing report: {} - For province: {}", e.getMessage(), provinceName);
             }
         }
 
         if (!reportsToSave.isEmpty()) {
             reportRepository.saveAll(reportsToSave);
-            System.out.println("They were saved " + reportsToSave.size() + " reports");
+            logger.info("They were saved {} reports", reportsToSave.size());
         } else {
-            System.out.println("No reports found to save");
+            logger.info("No reports found to save");
         }
     }
 }

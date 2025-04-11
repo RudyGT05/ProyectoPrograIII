@@ -3,7 +3,7 @@ package umg.edu.gt.desarrollo.proyectocovidstats.service;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import umg.edu.gt.desarrollo.proyectocovidstats.config.AppConfig;
-import umg.edu.gt.desarrollo.proyectocovidstats.config.ScheduledTaskConfig;
+
 import umg.edu.gt.desarrollo.proyectocovidstats.util.ApiClient;
 import org.springframework.stereotype.Service;
 
@@ -50,7 +50,7 @@ public class ApiService {
 
         } catch (Exception e) {
             logger.error("❌ Error al consumir la API o guardar en la BD:");
-            e.printStackTrace();
+
         }
     }
 }
