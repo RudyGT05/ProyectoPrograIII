@@ -3,7 +3,6 @@ package umg.edu.gt.desarrollo.proyectocovidstats.service;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import umg.edu.gt.desarrollo.proyectocovidstats.config.AppConfig;
-import umg.edu.gt.desarrollo.proyectocovidstats.config.ScheduledTaskConfig;
 import umg.edu.gt.desarrollo.proyectocovidstats.util.ApiClient;
 import org.springframework.stereotype.Service;
 
@@ -33,24 +32,24 @@ public class ApiService {
 
 
         try {
-            // 🔹 Obtener regiones
+            // 🔹 Get regions
             String regions = apiClient.getRegions();
             logger.info("Regions: " + regions);
-            covidDataService.saveRegions(regions); // ✅ Guardar en base de datos
+            covidDataService.saveRegions(regions); // ✅ Save to database
 
-            // 🔹 Provincias
+            // 🔹 Get Provinces
             String provinces = apiClient.getProvinces(countryIso);
             logger.info("Provinces for {}: {}", countryIso, provinces);
-            covidDataService.saveProvinces(provinces, countryIso); // ✅ Guardar en base de datos
+            covidDataService.saveProvinces(provinces, countryIso);
 
-            // 🔹 Reporte
+            // 🔹 Get Report
             String report = apiClient.getReport(countryIso, reportDate);
             logger.info("Report for {} on {}: {}", countryIso, reportDate, report);
-            covidDataService.saveReports(report); // ✅ Guardar en base de datos
+            covidDataService.saveReports(report);
 
         } catch (Exception e) {
-            logger.error("❌ Error al consumir la API o guardar en la BD:");
-            e.printStackTrace();
+            logger.error("❌ Error consuming the API or saving to the DB:");
+
         }
     }
 }

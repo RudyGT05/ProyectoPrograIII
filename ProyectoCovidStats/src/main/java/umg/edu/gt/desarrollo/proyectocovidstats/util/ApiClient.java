@@ -32,7 +32,7 @@ public class ApiClient {
     // You can implement other methods similarly for getProvinces and getReport
     public String getProvinces(String isoCode) {
         if (isoCode == null || isoCode.trim().isEmpty()) {
-            throw new IllegalArgumentException("El código ISO no puede ser nulo o vacío");
+            throw new IllegalArgumentException("The ISO code cannot be null or empty");
         }
 
         String url = "https://covid-19-statistics.p.rapidapi.com/provinces?iso=" + isoCode;
@@ -41,7 +41,7 @@ public class ApiClient {
 
     public String getReport(String isoCode, String date) {
         if (isoCode == null || isoCode.trim().isEmpty()) {
-            throw new IllegalArgumentException("El código ISO no puede ser nulo o vacío");
+            throw new IllegalArgumentException("The ISO code cannot be null or empty");
         }
 
         String url = "https://covid-19-statistics.p.rapidapi.com/reports?iso=" + isoCode + "&date=" + date;

@@ -2,6 +2,8 @@ package umg.edu.gt.desarrollo.proyectocovidstats.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import org.springframework.stereotype.Service;
 import umg.edu.gt.desarrollo.proyectocovidstats.model.Province;
 import umg.edu.gt.desarrollo.proyectocovidstats.model.Region;
@@ -15,6 +17,8 @@ import java.util.*;
 
 @Service
 public class CovidDataService {
+    private static final Logger logger = LogManager.getLogger(CovidDataService.class);
+
     private final RegionRepository regionRepository;
     private final ProvinceRepository provinceRepository;
     private final ReportRepository reportRepository;
@@ -116,10 +120,10 @@ public class CovidDataService {
 
         if (!provincesToSave.isEmpty()) {
             provinceRepository.saveAll(provincesToSave);
-            System.out.println("They were saved " + provincesToSave.size() + " new provinces");
+            logger.info("They were saved " + provincesToSave.size() + " new provinces");
         }
 
-        System.out.println("Total number of provinces on the temporary map: " + nameProvinceMap.size());
+        logger.info("Total number of provinces on the temporary map: " + nameProvinceMap.size());
     }
 
     public void saveReports(String json) throws Exception {
@@ -129,7 +133,7 @@ public class CovidDataService {
         for (JsonNode node : root) {
             // First we check if the JSON structure has the province correctly
             if (!node.has("region") || !node.get("region").has("province")) {
-                System.out.println("Node without province information: " + node.toString());
+                logger.info("Node without province information: " + node.toString());
                 continue;
             }
 
@@ -147,15 +151,15 @@ public class CovidDataService {
 
             if (province == null) {
                 // If it's not on the map, we try to search the DB for a similar name
-                System.out.println("Province not found on the temporary map: " + provinceName);
+                logger.info("Province not found on the temporary map: " + provinceName);
                 List<Province> similarProvinces = provinceRepository.findByNameContainingIgnoreCase(provinceName);
                 if (!similarProvinces.isEmpty()) {
                     province = similarProvinces.get(0);
                     // Added to the map for future reference
                     nameProvinceMap.put(provinceName, province);
-                    System.out.println("Similar province found: " + province.getName());
+                    logger.info("Similar province found: " + province.getName());
                 } else {
-                    System.out.println("No province similar to: " + provinceName);
+                    logger.info("No province similar to: " + provinceName);
                     continue;
                 }
             }
@@ -181,15 +185,15 @@ public class CovidDataService {
                     reportsToSave.add(report);
                 }
             } catch (Exception e) {
-                System.out.println("Error processing report: " + e.getMessage() + " - For province: " + provinceName);
+                logger.error("Error processing report: " + e.getMessage() + " - For province: " + provinceName);
             }
         }
 
         if (!reportsToSave.isEmpty()) {
             reportRepository.saveAll(reportsToSave);
-            System.out.println("They were saved " + reportsToSave.size() + " reports");
+            logger.info("They were saved " + reportsToSave.size() + " reports");
         } else {
-            System.out.println("No reports found to save");
+            logger.info("No reports found to save");
         }
     }
 }
